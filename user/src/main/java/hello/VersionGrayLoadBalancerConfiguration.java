@@ -3,6 +3,8 @@ package hello;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.cloud.loadbalancer.core.ReactorLoadBalancer;
+import org.springframework.cloud.loadbalancer.support.LoadBalancerClientFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.cloud.client.DefaultServiceInstance;
@@ -14,12 +16,18 @@ import org.springframework.context.annotation.Primary;
 /**
  * @author Olga Maciaszek-Sharma
  */
-public class SayHelloConfiguration {
+public class VersionGrayLoadBalancerConfiguration {
 
     @Bean
     @Primary
     ServiceInstanceListSupplier serviceInstanceListSupplier() {
         return new DemoServiceInstanceListSuppler("say-hello");
+    }
+
+    @Bean
+    ReactorLoadBalancer<ServiceInstance> versionGrayLoadBalancer(LoadBalancerClientFactory loadBalancerClientFactory) {
+        return new VersionGrayLoadBalancer(
+                loadBalancerClientFactory.getLazyProvider("say-hello", ServiceInstanceListSupplier.class), "say-hello");
     }
 
 }
@@ -40,8 +48,8 @@ class DemoServiceInstanceListSuppler implements ServiceInstanceListSupplier {
     @Override
     public Flux<List<ServiceInstance>> get() {
         return Flux.just(Arrays
-            .asList(new DefaultServiceInstance(serviceId + "1", serviceId, "localhost", 8090, false),
-                new DefaultServiceInstance(serviceId + "2", serviceId, "localhost", 9092, false),
-                new DefaultServiceInstance(serviceId + "3", serviceId, "localhost", 9999, false)));
+                .asList(new DefaultServiceInstance(serviceId + "1", serviceId, "localhost", 8090, false),
+                        new DefaultServiceInstance(serviceId + "2", serviceId, "localhost", 9092, false),
+                        new DefaultServiceInstance(serviceId + "3", serviceId, "localhost", 9999, false)));
     }
 }

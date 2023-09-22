@@ -1,14 +1,14 @@
 package hello;
 
-import reactor.core.publisher.Mono;
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.loadbalancer.reactive.ReactorLoadBalancerExchangeFilterFunction;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 /**
  * @author Olga Maciaszek-Sharma
@@ -16,7 +16,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 @SpringBootApplication
 @RestController
 public class UserApplication {
-
     private final WebClient.Builder loadBalancedWebClientBuilder;
     private final ReactorLoadBalancerExchangeFilterFunction lbFunction;
 
@@ -31,18 +30,20 @@ public class UserApplication {
     }
 
     @RequestMapping("/hi")
-    public Mono<String> hi(@RequestParam(value = "name", defaultValue = "Mary") String name) {
+    public Mono<String> hi(@RequestParam(value = "name", defaultValue = "Mary") String name,
+                           @RequestHeader(name = "dealer_id", required = false) String dealerId) {
         return loadBalancedWebClientBuilder.build().get().uri("http://say-hello/greeting")
-            .retrieve().bodyToMono(String.class)
-            .map(greeting -> String.format("%s, %s!", greeting, name));
+                .header("dealer_id", dealerId)
+                .retrieve().bodyToMono(String.class)
+                .map(greeting -> String.format("%s, %s!", greeting, name));
     }
 
     @RequestMapping("/hello")
     public Mono<String> hello(@RequestParam(value = "name", defaultValue = "John") String name) {
         return WebClient.builder()
-            .filter(lbFunction)
-            .build().get().uri("http://say-hello/greeting")
-            .retrieve().bodyToMono(String.class)
-            .map(greeting -> String.format("%s, %s!", greeting, name));
+                .filter(lbFunction)
+                .build().get().uri("http://say-hello/greeting")
+                .retrieve().bodyToMono(String.class)
+                .map(greeting -> String.format("%s, %s!", greeting, name));
     }
 }
